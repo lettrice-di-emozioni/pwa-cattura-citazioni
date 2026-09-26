@@ -12,18 +12,42 @@ const copyBtn = document.getElementById("copyBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 const toast = document.getElementById("toast");
 
-// --- CARICA / SCATTA IMMAGINE ---
-captureButton.addEventListener("click", () => fileInput.click());
-
+// --- CARICA / SCATTA IMMAGINE CON RIDIMENSIONAMENTO AUTOMATICO ---
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = () => {
-    previewImg.src = reader.result;
-    imagePreview.style.display = "block";
-    runOCR(reader.result);
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      // Ridimensionamento per evitare saturazione RAM su mobile
+      const MAX_WIDTH = 1200;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > MAX_WIDTH) {
+        height = Math.round((height * MAX_WIDTH) / width);
+        width = MAX_WIDTH;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Otteniamo l'immagine alleggerita
+      const resizedImageData = canvas.toDataURL("image/jpeg", 0.85);
+
+      previewImg.src = resizedImageData;
+      imagePreview.style.display = "block";
+      
+      // Passiamo l'immagine alleggerita all'OCR
+      runOCR(resizedImageData);
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 });
@@ -37,6 +61,9 @@ function runOCR(imageData) {
   }).then(({ data: { text } }) => {
     ocrText.value = text;
     statusBox.innerText = "✔️ Testo estratto!";
+  }).catch(err => {
+    statusBox.innerText = "❌ Errore durante l'analisi";
+    console.error(err);
   });
 }
 
