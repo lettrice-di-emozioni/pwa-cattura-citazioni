@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cattura Citazioni</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/style.css" />
+  <meta name="theme-color" content="#f5e9d8" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="title-block">
+      <h1>Cattura Citazioni</h1>
+      <p class="subtitle">OCR locale per citazioni da libri</p>
+    </div>
+    <div class="meta-block">
+      <label>
+        <span>Titolo libro</span>
+        <input type="text" id="bookTitle" placeholder="Es. Il nome della rosa" />
+      </label>
+      <label>
+        <span>Pagina</span>
+        <input type="text" id="pageNumber" placeholder="Es. 127" />
+      </label>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="capture-section">
+      <div class="capture-actions">
+        <button id="captureButton" class="primary-btn">
+          📷 Scatta Foto / Carica Immagine
+        </button>
+        <p class="hint">
+          Puoi anche incollare un'immagine dagli appunti (Ctrl+V / long press → Incolla).
+        </p>
+        <input type="file" id="fileInput" accept="image/*" hidden />
+      </div>
+
+      <div class="image-preview" id="imagePreview">
+        <p class="placeholder">Nessuna immagine selezionata.</p>
+        <img id="previewImg" alt="Anteprima immagine" />
+      </div>
+
+      <div class="status" id="status"></div>
+    </section>
+
+    <section class="editor-section">
+      <h2>Testo estratto</h2>
+      <textarea id="ocrText" placeholder="Il testo OCR apparirà qui..." rows="10"></textarea>
+
+      <div class="format-actions">
+        <button id="formatObsidianBtn" class="secondary-btn">
+          Formattta per Obsidian
+        </button>
+        <button id="mergeLinesBtn" class="secondary-btn">
+          Unisci righe
+        </button>
+        <button id="addDetailsBtn" class="secondary-btn">
+          Aggiungi dettagli (titolo + pagina)
+        </button>
+      </div>
+    </section>
+
+    <section class="export-section">
+      <button id="copyBtn" class="primary-btn">
+        📋 Copia per Obsidian
+      </button>
+      <button id="downloadBtn" class="secondary-btn">
+        ⬇️ Scarica nota (.md)
+      </button>
+      <div id="toast" class="toast">Copiato negli appunti!</div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
