@@ -1,9 +1,8 @@
-// --- ELEMENTI ---
-const fileInput = document.getElementById("fileInput");
 const captureButton = document.getElementById("captureButton");
+const fileInput = document.getElementById("fileInput");
 const previewImg = document.getElementById("previewImg");
 const imagePreview = document.getElementById("imagePreview");
-const statusBox = document.getElementById("status");
+const statusBox = document.getElementById("status") || document.getElementById("statusBox");
 const ocrText = document.getElementById("ocrText");
 const mergeLinesBtn = document.getElementById("mergeLinesBtn");
 const formatObsidianBtn = document.getElementById("formatObsidianBtn");
@@ -13,96 +12,136 @@ const downloadBtn = document.getElementById("downloadBtn");
 const toast = document.getElementById("toast");
 
 // --- CARICA / SCATTA IMMAGINE CON RIDIMENSIONAMENTO AUTOMATICO ---
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0];
-  if (!file) return;
+if (captureButton && fileInput) {
+  captureButton.addEventListener("click", () => fileInput.click());
+}
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      // Ridimensionamento per evitare saturazione RAM su mobile
-      const MAX_WIDTH = 1200;
-      let width = img.width;
-      let height = img.height;
+if (fileInput) {
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (!file) return;
 
-      if (width > MAX_WIDTH) {
-        height = Math.round((height * MAX_WIDTH) / width);
-        width = MAX_WIDTH;
-      }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Ridimensionamento per evitare saturazione RAM su mobile
+        const MAX_WIDTH = 1200;
+        let width = img.width;
+        let height = img.height;
 
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
 
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, width, height);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
 
-      // Otteniamo l'immagine alleggerita
-      const resizedImageData = canvas.toDataURL("image/jpeg", 0.85);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
 
-      previewImg.src = resizedImageData;
-      imagePreview.style.display = "block";
-      
-      // Passiamo l'immagine alleggerita all'OCR
-      runOCR(resizedImageData);
+        // Otteniamo l'immagine alleggerita
+        const resizedImageData = canvas.toDataURL("image/jpeg", 0.85);
+
+        if (previewImg) previewImg.src = resizedImageData;
+        if (imagePreview) imagePreview.style.display = "block";
+        
+        // Passiamo l'immagine alleggerita all'OCR
+        runOCR(resizedImageData);
+      };
+      img.src = e.target.result;
     };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-});
+    reader.readAsDataURL(file);
+  });
+}
 
 // --- OCR ---
 function runOCR(imageData) {
-  statusBox.innerText = "⏳ Analisi immagine in corso...";
+  if (statusBox) statusBox.innerText = "⏳ Analisi immagine in corso...";
 
   Tesseract.recognize(imageData, "ita", {
-    logger: (m) => (statusBox.innerText = m.status)
+    logger: (m) => {
+      if (statusBox) statusBox.innerText = m.status;
+    }
   }).then(({ data: { text } }) => {
-    ocrText.value = text;
-    statusBox.innerText = "✔️ Testo estratto!";
+    if (ocrText) ocrText.value = text;
+    if (statusBox) statusBox.innerText = "✔️ Testo estratto!";
   }).catch(err => {
-    statusBox.innerText = "❌ Errore durante l'analisi";
+    if (statusBox) statusBox.innerText = "❌ Errore durante l'analisi";
     console.error(err);
   });
 }
 
 // --- UNISCI RIGHE ---
-mergeLinesBtn.addEventListener("click", () => {
-  const merged = ocrText.value.replace(/\n+/g, " ").trim();
-  ocrText.value = merged;
-});
+if (mergeLinesBtn) {
+  mergeLinesBtn.addEventListener("click", () => {
+    if (ocrText) {
+      const merged = ocrText.value.replace(/\n+/g, " ").trim();
+      ocrText.value = merged;
+    }
+  });
+}
 
 // --- FORMATTA PER OBSIDIAN ---
-formatObsidianBtn.addEventListener("click", () => {
-  const formatted = `> ${ocrText.value.replace(/\n+/g, "\n> ")}`;
-  ocrText.value = formatted;
-});
+if (formatObsidianBtn) {
+  formatObsidianBtn.addEventListener("click", () => {
+    if (ocrText) {
+      const formatted = `> ${ocrText.value.replace(/\n+/g, "\n> ")}`;
+      ocrText.value = formatted;
+    }
+  });
+}
 
 // --- AGGIUNGI DETTAGLI ---
-addDetailsBtn.addEventListener("click", () => {
-  const title = document.getElementById("bookTitle").value || "Titolo sconosciuto";
-  const page = document.getElementById("pageNumber").value || "Pagina?";
-  ocrText.value = `**${title} — pag. ${page}**\n\n${ocrText.value}`;
-});
+if (addDetailsBtn) {
+  addDetailsBtn.addEventListener("click", () => {
+    const bookTitleEl = document.getElementById("bookTitle") || document.getElementById("pageTitle");
+    const pageNumEl = document.getElementById("pageNum") || document.getElementById("pageNumber");
+    
+    const bookTitle = bookTitleEl ? bookTitleEl.value : "";
+    const pageNum = pageNumEl ? pageNumEl.value : "";
+    let details = "";
 
-// --- COPIA ---
-copyBtn.addEventListener("click", () => {
-  navigator.clipboard.writeText(ocrText.value).then(() => {
-    toast.style.display = "block";
-    setTimeout(() => (toast.style.display = "none"), 2000);
+    if (bookTitle || pageNum) {
+      details = `\n\n— *${bookTitle || "Titolo sconosciuto"}*${pageNum ? `, pag. ${pageNum}` : ""}`;
+    }
+
+    if (ocrText) ocrText.value += details;
   });
-});
+}
 
-// --- DOWNLOAD .MD ---
-downloadBtn.addEventListener("click", () => {
-  const blob = new Blob([ocrText.value], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
+// --- COPIA NEGLI APPUNTI ---
+if (copyBtn) {
+  copyBtn.addEventListener("click", () => {
+    if (ocrText) {
+      navigator.clipboard.writeText(ocrText.value).then(() => {
+        showToast("Copiato negli appunti!");
+      });
+    }
+  });
+}
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "citazione.md";
-  a.click();
+// --- SCARICA NOTA (.MD) ---
+if (downloadBtn) {
+  downloadBtn.addEventListener("click", () => {
+    const bookTitleEl = document.getElementById("bookTitle") || document.getElementById("pageTitle");
+    const bookTitle = (bookTitleEl && bookTitleEl.value) ? bookTitleEl.value : "Citazione";
+    if (ocrText) {
+      const blob = new Blob([ocrText.value], { type: "text/markdown;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${bookTitle}.md`;
+      a.click();
+    }
+  });
+}
 
-  URL.revokeObjectURL(url);
-});
+function showToast(msg) {
+  if (toast) {
+    toast.innerText = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+  }
+}
